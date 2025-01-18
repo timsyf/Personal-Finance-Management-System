@@ -3,14 +3,14 @@ from tkinter import ttk, messagebox
 import requests
 import os
 from dotenv import load_dotenv
-from database import get_all_transactions
+from pages.financial_data_visualization.database import get_all_transactions
 
 load_dotenv()
 
 API_KEY = os.getenv("OPENAI_API_KEY")
 API_URL = "https://api.openai.com/v1/chat/completions"
 
-def create_ai_reports_tab(notebook):
+def create_financial_data_visualization_tab(notebook):
     tab_frame = ttk.Frame(notebook)
 
     tk.Label(tab_frame, text="AI Reports", font=("Arial", 16)).pack(pady=10)
@@ -74,4 +74,4 @@ def create_ai_reports_tab(notebook):
     submit_button = ttk.Button(tab_frame, text="Submit", command=get_openai_response)
     submit_button.pack(pady=10)
 
-    notebook.add(tab_frame, text="AI Reports")
+    notebook.add(tab_frame, text="Financial Data Visualization")

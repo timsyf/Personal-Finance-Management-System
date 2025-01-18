@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-from database import add_transaction, get_all_transactions, update_transaction, delete_transaction
+from pages.home.database import add_transaction, get_all_transactions, update_transaction, delete_transaction
 
 def create_home_tab(notebook):
     tab_frame = ttk.Frame(notebook)
