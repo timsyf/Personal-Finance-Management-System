@@ -11,6 +11,7 @@ from pages.alerts_and_reminder.alerts_and_reminder_tab import create_alerts_and_
 from pages.data_export_and_import.data_export_and_import_tab import create_data_export_and_import_tab
 from pages.dashboard.dashboard_tab import create_dashboard_tab
 from pages.home.home_tab import create_home_tab
+from pages.ai_insights.ai_insights_tab import create_ai_insights_tab
 
 def main():
     root = tk.Tk()
@@ -29,6 +30,7 @@ def main():
     create_recurring_transactions_tab(notebook)
     create_alerts_and_reminder_tab(notebook)
     create_data_export_and_import_tab(notebook)
+    create_ai_insights_tab(notebook)
     
 
     root.mainloop()
