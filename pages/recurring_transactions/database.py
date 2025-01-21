@@ -5,9 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_db_connection():
-    """
-    Establish a connection to the MySQL database.
-    """
+
     return mysql.connector.connect(
         host=os.getenv("DB_HOST"),
         user=os.getenv("DB_USER"),
@@ -16,9 +14,7 @@ def get_db_connection():
     )
 
 def get_all_recurring_transactions():
-    """
-    Fetch all recurring transactions from the database.
-    """
+
     try:
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)  # Use dictionary=True to return results as dicts
@@ -36,19 +32,17 @@ def get_all_recurring_transactions():
         if connection:
             connection.close()
 
-def insert_recurring_transaction(name, amount, recurrence, start_date):
-    """
-    Insert a new recurring transaction into the database.
-    """
+def insert_recurring_transaction(name, amount, recurrence, start_date, category):
+
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
 
         query = """
-        INSERT INTO recurring_transactions (name, amount, recurrence, start_date)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO recurring_transactions (name, amount, recurrence, start_date, category)
+        VALUES (%s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (name, amount, recurrence, start_date))
+        cursor.execute(query, (name, amount, recurrence, start_date, category))
         connection.commit()
         print("Transaction added successfully!")
     except mysql.connector.Error as err:
@@ -60,9 +54,7 @@ def insert_recurring_transaction(name, amount, recurrence, start_date):
             connection.close()
 
 def delete_recurring_transaction(recurring_id):
-    """
-    Delete a recurring transaction by its ID.
-    """
+
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
@@ -77,3 +69,23 @@ def delete_recurring_transaction(recurring_id):
             cursor.close()
         if connection:
             connection.close()
+
+def get_expenses_categories(user_id):
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+        query = """
+            SELECT name
+            FROM expenses_category
+            WHERE user_id = %s
+        """
+        cursor.execute(query, (user_id,))
+        categories = cursor.fetchall()
+        cursor.close()
+
+        category_names = [category["name"] for category in categories]
+        return category_names
+    except Exception as e:
+        raise Exception(f"Error fetching expense categories: {e}")
+
+

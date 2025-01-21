@@ -90,9 +90,9 @@ def create_tables():
             CREATE TABLE IF NOT EXISTS recurring_transactions (
                 recurring_id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id INT NOT NULL,
-                category_id INT,
                 amount DECIMAL(10, 2) NOT NULL,
                 name VARCHAR(255),
+                category VARCHAR(50) NOT NULL,
                 recurrence ENUM('Daily', 'Weekly', 'Monthly', 'Yearly') NOT NULL,
                 start_date DATE NOT NULL,
                 next_due_date DATE NOT NULL,
