@@ -44,47 +44,51 @@ def create_tables():
                 print("Admin user already exists")
             else:
                 raise err
-        
-        # Create transactions table with user_id
+
+        # Create income sources table first (since it's referenced by income_tracker)
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS transactions (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                description VARCHAR(255) NOT NULL,
-                amount DECIMAL(10,2) NOT NULL,
-                date DATE NOT NULL,
-                type ENUM('income', 'expense') NOT NULL,
-                category VARCHAR(50),
-                user_id INT NOT NULL,
-                FOREIGN KEY (user_id) REFERENCES users(id)
-            )
-        """)
-        
-        # Create budget table with user_id
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS budgets (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                category VARCHAR(50) NOT NULL,
-                amount DECIMAL(10,2) NOT NULL,
-                start_date DATE NOT NULL,
-                end_date DATE NOT NULL,
-                user_id INT NOT NULL,
-                FOREIGN KEY (user_id) REFERENCES users(id)
-            )
-        """)
-        
-        # Create expense categories table with user_id
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS expense_categories (
+            CREATE TABLE IF NOT EXISTS income_sources (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 name VARCHAR(50) NOT NULL,
                 description TEXT,
-                budget_limit DECIMAL(10,2),
                 user_id INT NOT NULL,
-                UNIQUE KEY unique_category_per_user (name, user_id),
+                UNIQUE KEY unique_source_per_user (name, user_id),
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
         
+        # Create income_tracker table after income_sources
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS income_tracker (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                amount DECIMAL(10,2) NOT NULL,
+                description VARCHAR(255) NOT NULL,
+                date DATE NOT NULL,
+                source_id INT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (source_id) REFERENCES income_sources(id)
+            )
+        """)
+        
+        # Create recurring income table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS recurring_income (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                amount DECIMAL(10,2) NOT NULL,
+                description VARCHAR(255) NOT NULL,
+                source_id INT NOT NULL,
+                frequency VARCHAR(50) NOT NULL,
+                start_date DATE NOT NULL,
+                end_date DATE,
+                next_date DATE NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (source_id) REFERENCES income_sources(id)
+            )
+        """)
         # Create recurring transactions table with user_id
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS recurring_transactions (
