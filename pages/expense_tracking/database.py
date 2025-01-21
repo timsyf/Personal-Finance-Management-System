@@ -119,3 +119,49 @@ def add_expense_category(name, user_id):
         cursor.close()
     except Exception as e:
         raise Exception(f"Error adding expense category: {e}")
+
+# Function to delete an expense by ID
+def delete_expense_by_id(expense_id):
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        query = """
+            DELETE FROM expenses_tracker
+            WHERE id = %s
+        """
+        cursor.execute(query, (expense_id,))
+        connection.commit()
+        cursor.close()
+    except Exception as e:
+        raise Exception(f"Error deleting expense: {e}")
+
+# Function to update an expense by ID
+def update_expense_by_id(expense_id, description, amount, category, date):
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        query = """
+            UPDATE expenses_tracker
+            SET description = %s, amount = %s, category = %s, date = %s
+            WHERE id = %s
+        """
+        cursor.execute(query, (description, amount, category, date, expense_id))
+        connection.commit()
+        cursor.close()
+    except Exception as e:
+        raise Exception(f"Error updating expense: {e}")
+
+# Function to delete an expense category by name
+def delete_expense_category_by_name(name, user_id):
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        query = """
+            DELETE FROM expenses_category
+            WHERE name = %s AND user_id = %s
+        """
+        cursor.execute(query, (name, user_id))
+        connection.commit()
+        cursor.close()
+    except Exception as e:
+        raise Exception(f"Error deleting expense category: {e}")
