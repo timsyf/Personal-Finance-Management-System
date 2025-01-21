@@ -1,4 +1,4 @@
-CREATE DATABASE finance;
+CREATE DATABASE IF NOT EXISTS finance;
 
 USE finance;
 
@@ -37,4 +37,18 @@ CREATE TABLE Income (
     income_date DATE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS RecurringTransactions (
+    recurring_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    category_id INT,
+    amount DECIMAL(10, 2) NOT NULL,
+    description VARCHAR(255),
+    recurrence ENUM('Daily', 'Weekly', 'Monthly', 'Yearly') NOT NULL,
+    start_date DATE NOT NULL,
+    next_due_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES ExpenseCategories(category_id) ON DELETE SET NULL
 );
