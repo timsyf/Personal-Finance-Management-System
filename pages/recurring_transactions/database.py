@@ -66,7 +66,7 @@ def delete_recurring_transaction(recurring_id):
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
-        query = "DELETE FROM RecurringTransactions WHERE recurring_id = %s"
+        query = "DELETE FROM recurring_transactions WHERE recurring_id = %s"
         cursor.execute(query, (recurring_id,))
         connection.commit()
         print(f"Recurring transaction with ID {recurring_id} deleted successfully.")

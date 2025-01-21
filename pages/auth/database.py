@@ -88,15 +88,16 @@ def create_tables():
         # Create recurring transactions table with user_id
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS recurring_transactions (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                description VARCHAR(255) NOT NULL,
-                amount DECIMAL(10,2) NOT NULL,
-                frequency VARCHAR(50) NOT NULL,
-                next_date DATE NOT NULL,
-                category VARCHAR(50),
-                type ENUM('income', 'expense') NOT NULL,
+                recurring_id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id INT NOT NULL,
-                FOREIGN KEY (user_id) REFERENCES users(id)
+                category_id INT,
+                amount DECIMAL(10, 2) NOT NULL,
+                name VARCHAR(255),
+                recurrence ENUM('Daily', 'Weekly', 'Monthly', 'Yearly') NOT NULL,
+                start_date DATE NOT NULL,
+                next_due_date DATE NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                
             )
         """)
         

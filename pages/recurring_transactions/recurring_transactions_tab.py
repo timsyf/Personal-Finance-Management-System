@@ -1,10 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+from .database import insert_recurring_transaction, get_all_recurring_transactions, delete_recurring_transaction
 
 # Sample recurring transactions list (replace with database integration)
-recurring_transactions = []
-
-
 def create_recurring_transactions_tab(notebook, user_id):
     # Create the tab frame
     tab_frame = ttk.Frame(notebook)
@@ -37,13 +35,30 @@ def create_recurring_transactions_tab(notebook, user_id):
     start_date_entry.grid(row=3, column=1, padx=5, pady=5)
 
     # Table to display recurring transactions
-    columns = ("Name", "Amount", "Recurrence", "Start Date")
+    columns = ("ID", "Name", "Amount", "Recurrence", "Start Date")
     transaction_table = ttk.Treeview(tab_frame, columns=columns, show="headings", height=10)
     transaction_table.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
     for col in columns:
         transaction_table.heading(col, text=col)
         transaction_table.column(col, width=150, anchor=tk.CENTER)
+
+    # Load existing transactions from the database
+    def load_transactions():
+        try:
+            transactions = get_all_recurring_transactions()
+            for transaction in transactions:
+                transaction_table.insert("", "end", values=(
+                    transaction["recurring_id"],
+                    transaction["name"],
+                    f"${transaction['amount']:.2f}",
+                    transaction["recurrence"],
+                    transaction["start_date"],
+                ))
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load transactions: {e}")
+
+    load_transactions()
 
     # Add transaction button
     def add_transaction():
@@ -64,12 +79,16 @@ def create_recurring_transactions_tab(notebook, user_id):
             messagebox.showerror("Error", "Amount must be a number!")
             return
 
-        # Add to transaction list (or database)
-        transaction = {"name": name, "amount": amount, "recurrence": recurrence, "start_date": start_date}
-        recurring_transactions.append(transaction)
+        # Add to the database
+        try:
+            insert_recurring_transaction(name, amount, recurrence, start_date)  # Insert into the database
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to add transaction to the database: {e}")
+            return
 
-        # Add to table
-        transaction_table.insert("", "end", values=(name, f"${amount:.2f}", recurrence, start_date))
+        # Reload the table
+        transaction_table.delete(*transaction_table.get_children())
+        load_transactions()
 
         # Clear input fields
         expense_name_entry.delete(0, tk.END)
@@ -91,17 +110,19 @@ def create_recurring_transactions_tab(notebook, user_id):
         if confirm:
             # Get the selected transaction details
             item = transaction_table.item(selected_item)
-            transaction_values = item["values"]
+            recurring_id = item["values"][0]  # ID is the first column
 
-            # Remove from transaction list (matches by "Name", "Amount", "Recurrence", and "Start Date")
-            for transaction in recurring_transactions:
-                if (transaction["name"], f"${transaction['amount']:.2f}", transaction["recurrence"],
-                    transaction["start_date"]) == tuple(transaction_values):
-                    recurring_transactions.remove(transaction)
-                    break
+            # Delete from the database
+            try:
+                delete_recurring_transaction(recurring_id)
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to delete transaction from the database: {e}")
+                return
 
-            # Remove from the table
-            transaction_table.delete(selected_item)
+            # Reload the table
+            transaction_table.delete(*transaction_table.get_children())
+            load_transactions()
+
             messagebox.showinfo("Success", "Transaction deleted successfully.")
 
     # Button frame
@@ -112,8 +133,8 @@ def create_recurring_transactions_tab(notebook, user_id):
     ttk.Button(button_frame, text="Add Transaction", command=add_transaction).pack(side=tk.LEFT, padx=5)
 
     # Delete Transaction Button
-    ttk.Button(button_frame, text="Delete Selected Transaction", command=delete_selected_transaction).pack(side=tk.LEFT,
-                                                                                                           padx=5)
+    ttk.Button(button_frame, text="Delete Selected Transaction", command=delete_selected_transaction).pack(side=tk.LEFT, padx=5)
 
     # Add the tab to the notebook
     notebook.add(tab_frame, text="Recurring Transactions")
+
