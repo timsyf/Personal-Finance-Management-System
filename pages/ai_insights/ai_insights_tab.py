@@ -10,7 +10,7 @@ load_dotenv()
 API_KEY = os.getenv("OPENAI_API_KEY")
 API_URL = "https://api.openai.com/v1/chat/completions"
 
-def create_ai_insights_tab(notebook):
+def create_ai_insights_tab(notebook, user_id):
     tab_frame = ttk.Frame(notebook)
 
     tk.Label(tab_frame, text="AI Reports", font=("Arial", 16)).pack(pady=10)
@@ -31,7 +31,7 @@ def create_ai_insights_tab(notebook):
         loading_label.config(text="Loading... please wait.")
         response_text.config(state=tk.NORMAL)
 
-        transactions = get_all_transactions()
+        transactions = get_all_transactions(user_id)
 
         if not transactions:
             messagebox.showerror("Database Error", "No transactions found in the database.")

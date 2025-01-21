@@ -12,13 +12,13 @@ def get_db_connection():
         database=os.getenv("DB_NAME")
     )
 
-def get_all_transactions():
+def get_all_transactions(user_id):
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
 
-        query = "SELECT * FROM transactions"
-        cursor.execute(query)
+        query = "SELECT * FROM transactions WHERE user_id = %s ORDER BY date DESC"
+        cursor.execute(query, (user_id,))
         rows = cursor.fetchall()
         return rows
     except mysql.connector.Error as err:
