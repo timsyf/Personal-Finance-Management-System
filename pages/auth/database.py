@@ -100,6 +100,19 @@ def create_tables():
             )
         """)
         
+        # Create daily expenses table with user_id
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS expenses_tracker (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                description VARCHAR(255) NOT NULL,
+                amount DECIMAL(10, 2) NOT NULL,
+                category VARCHAR(50) NOT NULL,
+                date DATE NOT NULL,
+                user_id INT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+        
         connection.commit()
         print("Tables verified successfully")
         return True
