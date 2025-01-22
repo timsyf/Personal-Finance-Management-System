@@ -29,9 +29,6 @@ def create_ai_insights_tab(notebook, user_id):
     tab_frame = ttk.Frame(notebook)
     notebook.add(tab_frame, text="AI Insights")
 
-    title_label = ttk.Label(tab_frame, text="AI Financial Insights", font=("Arial", 18))
-    title_label.pack(pady=10)
-
     main_frame = ttk.Frame(tab_frame)
     main_frame.pack(fill="x", padx=20, pady=10)
 
