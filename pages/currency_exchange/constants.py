@@ -1,0 +1,36 @@
+CURRENCIES = {
+    'AUD': {'name': 'Australian Dollar', 'symbol': 'A$'},
+    'BDT': {'name': 'Bangladeshi Taka', 'symbol': '৳'},
+    'BRL': {'name': 'Brazilian Real', 'symbol': 'R$'},
+    'CAD': {'name': 'Canadian Dollar', 'symbol': 'C$'},
+    'CHF': {'name': 'Swiss Franc', 'symbol': 'CHF'},
+    'CNY': {'name': 'Chinese Yuan', 'symbol': '¥'},
+    'EUR': {'name': 'Euro', 'symbol': '€'},
+    'GBP': {'name': 'British Pound', 'symbol': '£'},
+    'HKD': {'name': 'Hong Kong Dollar', 'symbol': 'HK$'},
+    'IDR': {'name': 'Indonesian Rupiah', 'symbol': 'Rp'},
+    'INR': {'name': 'Indian Rupee', 'symbol': '₹'},
+    'JPY': {'name': 'Japanese Yen', 'symbol': '¥'},
+    'KHR': {'name': 'Cambodian Riel', 'symbol': '៛'},
+    'KRW': {'name': 'South Korean Won', 'symbol': '₩'},
+    'LAK': {'name': 'Laotian Kip', 'symbol': '₭'},
+    'LKR': {'name': 'Sri Lankan Rupee', 'symbol': '₨'},
+    'MMK': {'name': 'Myanmar Kyat', 'symbol': 'K'},
+    'MXN': {'name': 'Mexican Peso', 'symbol': '$'},
+    'MYR': {'name': 'Malaysian Ringgit', 'symbol': 'RM'},
+    'NPR': {'name': 'Nepalese Rupee', 'symbol': '₨'},
+    'NZD': {'name': 'New Zealand Dollar', 'symbol': '$'},
+    'PHP': {'name': 'Philippine Peso', 'symbol': '₱'},
+    'PKR': {'name': 'Pakistani Rupee', 'symbol': '₨'},
+    'PLN': {'name': 'Polish Złoty', 'symbol': 'zł'},
+    'SEK': {'name': 'Swedish Krona', 'symbol': 'kr'},
+    'SGD': {'name': 'Singapore Dollar', 'symbol': 'S$'},
+    'THB': {'name': 'Thai Baht', 'symbol': '฿'},
+    'TWD': {'name': 'New Taiwan Dollar', 'symbol': 'NT$'},
+    'USD': {'name': 'US Dollar', 'symbol': '$'},
+    'VND': {'name': 'Vietnamese Đồng', 'symbol': '₫'},
+    'ZAR': {'name': 'South African Rand', 'symbol': 'R'}
+}
+
+# API Configuration
+EXCHANGE_RATE_API_URL = "https://api.exchangerate-api.com/v4/latest/" 
