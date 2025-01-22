@@ -1,7 +1,7 @@
 import mysql.connector
 import os
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 from ..auth.database import get_db_connection
 
 load_dotenv()
@@ -315,7 +315,7 @@ def delete_income_source(source_id, user_id):
         connection.close()
 
 def add_recurring_income(user_id, amount, description, source_id, frequency, start_date, end_date=None):
-    """Add a recurring income schedule without pre-generating transactions"""
+    """Add a recurring income schedule and immediately create past records if start_date is in the past"""
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
@@ -323,16 +323,65 @@ def add_recurring_income(user_id, amount, description, source_id, frequency, sta
         print(f"Adding recurring income: {description}, Amount: {amount}, Frequency: {frequency}")
         print(f"Start Date: {start_date}, End Date: {end_date}")
         
-        # Add to recurring_income table
+        current_date = datetime.now().date()
+        
+        # Add to recurring_income table with next_date
+        # If start_date is in the past, set next_date to tomorrow to avoid duplicate entries
+        next_date = max(start_date, current_date + timedelta(days=1))
+        
         query = """
             INSERT INTO recurring_income 
             (user_id, amount, description, source_id, frequency, start_date, end_date, next_date)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
         cursor.execute(query, (user_id, amount, description, source_id, frequency, 
-                             start_date, end_date, start_date))
+                             start_date, end_date, next_date))
         recurring_id = cursor.lastrowid
         print(f"Created recurring income record with ID: {recurring_id}")
+        
+        # If start_date is in the past, create all past records immediately
+        if start_date < current_date:
+            current = start_date
+            while current <= current_date:
+                # Skip if we've passed the end date
+                if end_date and current > end_date:
+                    break
+                    
+                # Add income record for this date
+                add_query = """
+                    INSERT INTO income_tracker 
+                    (user_id, amount, description, date, source_id)
+                    VALUES (%s, %s, %s, %s, %s)
+                """
+                cursor.execute(add_query, (
+                    user_id, amount, description, current, source_id
+                ))
+                
+                # Move to next date based on frequency
+                if frequency == "Daily":
+                    current = current + timedelta(days=1)
+                elif frequency == "Monthly":
+                    if current.month == 12:
+                        current = current.replace(year=current.year + 1, month=1)
+                    else:
+                        current = current.replace(month=current.month + 1)
+                elif frequency == "Bi-monthly":
+                    if current.month >= 11:
+                        current = current.replace(year=current.year + 1, month=(current.month + 2) % 12)
+                    else:
+                        current = current.replace(month=current.month + 2)
+                elif frequency == "Quarterly":
+                    if current.month > 9:
+                        current = current.replace(year=current.year + 1, month=(current.month + 3) % 12)
+                    else:
+                        current = current.replace(month=current.month + 3)
+                elif frequency == "Semi-annually":
+                    if current.month > 6:
+                        current = current.replace(year=current.year + 1, month=(current.month + 6) % 12)
+                    else:
+                        current = current.replace(month=current.month + 6)
+                elif frequency == "Annually":
+                    current = current.replace(year=current.year + 1)
         
         connection.commit()
         return True, "Recurring income schedule added successfully"
@@ -380,7 +429,9 @@ def process_recurring_income():
             
             # Calculate next date based on frequency
             next_date = income['next_date']
-            if income['frequency'] == "Monthly":
+            if income['frequency'] == "Daily":
+                next_date = next_date + timedelta(days=1)
+            elif income['frequency'] == "Monthly":
                 if next_date.month == 12:
                     next_date = next_date.replace(year=next_date.year + 1, month=1)
                 else:
@@ -536,7 +587,7 @@ def get_recurring_income(user_id):
         cursor.execute(query, (user_id,))
         return cursor.fetchall()
     except mysql.connector.Error as err:
-        print(f"Error: {err}")
+        print(f"Error in get_recurring_income: {err}")
         return []
     finally:
         cursor.close()
