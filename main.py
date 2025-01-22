@@ -16,6 +16,7 @@ from pages.home.home_tab import create_home_tab
 from pages.ai_insights.ai_insights_tab import create_ai_insights_tab
 from pages.auth.auth_window import AuthWindow
 from pages.income_tracking.database import process_recurring_income
+from pages.currency_exchange.currency_exchange_tab import create_currency_exchange_tab
 import threading
 import time
 
@@ -78,6 +79,7 @@ def main(user_id=None):
     create_alerts_and_reminder_tab(notebook, user_id)
     create_data_export_and_import_tab(notebook, user_id)
     create_ai_insights_tab(notebook, user_id)
+    create_currency_exchange_tab(notebook)
 
 
     # Set up clean shutdown

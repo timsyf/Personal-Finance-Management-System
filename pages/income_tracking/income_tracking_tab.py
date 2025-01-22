@@ -113,6 +113,8 @@ class IncomeTrackingTab:
                   command=self.apply_filters).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Clear Filters", 
                   command=self.clear_filters).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text="Refresh", 
+                  command=self.load_income_data).pack(side="left", padx=5)
         
         # Create Treeview below filters
         self.setup_income_tree()
@@ -184,6 +186,8 @@ class IncomeTrackingTab:
                   command=self.delete_source).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Clear", 
                   command=self.clear_source_form).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text="Refresh", 
+                  command=lambda: [self.load_sources(), self.update_source_combo()]).pack(side="left", padx=5)
         
     def setup_income_tree(self):
         # Add scrollbar
@@ -326,7 +330,7 @@ class IncomeTrackingTab:
         # Frequency
         ttk.Label(form_frame, text="Frequency:").pack(pady=2)
         self.recurring_frequency = ttk.Combobox(form_frame, width=27, state="readonly")
-        self.recurring_frequency["values"] = ("Monthly", "Bi-monthly", "Quarterly", 
+        self.recurring_frequency["values"] = ("Daily", "Monthly", "Bi-monthly", "Quarterly", 
                                             "Semi-annually", "Annually")
         self.recurring_frequency.set("Monthly")
         self.recurring_frequency.pack(pady=2)
@@ -431,9 +435,9 @@ class IncomeTrackingTab:
             return
         
         if messagebox.askyesno("Confirm Delete", 
-                              "Do you want to delete future transactions as well?"):
+                              "Are you sure you want to delete this recurring income?"):
             recurring_id = self.recurring_tree.item(selection[0])["values"][0]
-            success, message = delete_recurring_income(recurring_id, self.user_id, True)
+            success, message = delete_recurring_income(recurring_id, self.user_id)
             
             if success:
                 messagebox.showinfo("Success", message)
@@ -478,7 +482,7 @@ class IncomeTrackingTab:
                 record["amount"],
                 record["frequency"],
                 record["next_date"].strftime("%Y-%m-%d"),
-                record["source"]
+                record["source_name"]
             ))
     
     def update_source_combo(self):
