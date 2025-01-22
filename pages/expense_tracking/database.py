@@ -165,3 +165,52 @@ def delete_expense_category_by_name(name, user_id):
         cursor.close()
     except Exception as e:
         raise Exception(f"Error deleting expense category: {e}")
+
+def get_expense_stats_by_category(user_id):
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+        query = """
+            SELECT 
+                category, 
+                COUNT(*) as count, 
+                SUM(amount) as total, 
+                MIN(amount) as min, 
+                MAX(amount) as max, 
+                AVG(amount) as avg
+            FROM expenses_tracker
+            WHERE user_id = %s
+            GROUP BY category
+        """
+        cursor.execute(query, (user_id,))
+        stats = cursor.fetchall()
+        cursor.close()
+        return {item['category']: {
+            'count': item['count'],
+            'total': item['total'],
+            'min': item['min'],
+            'max': item['max'],
+            'avg': item['avg']
+        } for item in stats}
+    except Exception as e:
+        raise Exception(f"Error fetching expense stats: {e}")
+
+# Delete all expenses linked to the category
+def delete_category_and_expenses(category_name, user_id):
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+
+        
+        cursor.execute("""
+            DELETE FROM expenses_tracker WHERE category = %s AND user_id = %s
+        """, (category_name, user_id))
+
+        cursor.execute("""
+            DELETE FROM expenses_category WHERE name = %s AND user_id = %s
+        """, (category_name, user_id))
+
+        connection.commit()
+        cursor.close()
+    except Exception as e:
+        raise Exception(f"Error deleting category and its linked expenses: {e}")

@@ -3,28 +3,49 @@ from tkinter import ttk, messagebox
 from tkcalendar import DateEntry
 from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
-from pages.expense_tracking.database import add_expenses_tracker, get_filtered_expenses, get_expenses_categories, add_expense_category, delete_expense_by_id, update_expense_by_id, delete_expense_category_by_name
+from pages.expense_tracking.database import *
 from datetime import datetime
 
 def create_expense_tracking_tab(notebook, user_id):
     main_tab_frame = ttk.Frame(notebook)
-    
+
     sub_notebook = ttk.Notebook(main_tab_frame)
-    
+
     sub_tab_1_frame = ttk.Frame(sub_notebook)
-    create_add_expense_subtab(sub_tab_1_frame, user_id)
-    sub_notebook.add(sub_tab_1_frame, text="Add Expense")
-    
     sub_tab_2_frame = ttk.Frame(sub_notebook)
-    create_view_expenses_subtab(sub_tab_2_frame, user_id)
-    sub_notebook.add(sub_tab_2_frame, text="View Expenses")
-    
     sub_tab_3_frame = ttk.Frame(sub_notebook)
-    create_manage_category_subtab(sub_tab_3_frame, user_id)
+
+    sub_notebook.add(sub_tab_1_frame, text="Add Expense")
+    sub_notebook.add(sub_tab_2_frame, text="View Expenses")
     sub_notebook.add(sub_tab_3_frame, text="Manage Categories")
-    
+
     sub_notebook.pack(fill="both", expand=True)
     notebook.add(main_tab_frame, text="Expense Tracking")
+
+    def on_tab_change(event):
+        selected_tab = event.widget.select()
+        selected_tab_text = event.widget.tab(selected_tab, "text")
+
+        if selected_tab_text == "Add Expense":
+            for widget in sub_tab_1_frame.winfo_children():
+                widget.destroy()
+            create_add_expense_subtab(sub_tab_1_frame, user_id)
+
+        elif selected_tab_text == "View Expenses":
+            for widget in sub_tab_2_frame.winfo_children():
+                widget.destroy()
+            create_view_expenses_subtab(sub_tab_2_frame, user_id)
+
+        elif selected_tab_text == "Manage Categories":
+            for widget in sub_tab_3_frame.winfo_children():
+                widget.destroy()
+            create_manage_category_subtab(sub_tab_3_frame, user_id)
+
+    sub_notebook.bind("<<NotebookTabChanged>>", on_tab_change)
+
+    create_add_expense_subtab(sub_tab_1_frame, user_id)
+    create_view_expenses_subtab(sub_tab_2_frame, user_id)
+    create_manage_category_subtab(sub_tab_3_frame, user_id)
 
 def create_add_expense_subtab(sub_tab_frame, user_id):
     def add_expense():
@@ -61,8 +82,8 @@ def create_add_expense_subtab(sub_tab_frame, user_id):
         except Exception as e:
             messagebox.showerror("Database Error", f"Error loading categories: {e}")
 
-    form_frame = ttk.LabelFrame(sub_tab_frame, text="Add Expense", padding="10")
-    form_frame.pack(fill="both", expand=True, padx=20, pady=10)
+    form_frame = ttk.LabelFrame(sub_tab_frame, text="Add Expense", padding="10", width=50)
+    form_frame.place(relx=0.5, rely=0.5, anchor="center")
 
     tk.Label(form_frame, text="Description:").grid(row=0, column=0, padx=10, pady=5, sticky=tk.W)
     description_entry = ttk.Entry(form_frame, width=50)
@@ -86,12 +107,10 @@ def create_add_expense_subtab(sub_tab_frame, user_id):
 
     load_categories()
 
-
-
 def create_view_expenses_subtab(sub_tab_frame, user_id):
-    def view_expenses():
-        start_date = start_date_picker.get_date()
-        end_date = end_date_picker.get_date()
+    def view_expenses(all_expenses=False):
+        start_date = None if all_expenses else start_date_picker.get_date()
+        end_date = None if all_expenses else end_date_picker.get_date()
         category = category_filter_combobox.get()
         min_amount = min_amount_entry.get()
         max_amount = max_amount_entry.get()
@@ -103,7 +122,7 @@ def create_view_expenses_subtab(sub_tab_frame, user_id):
         except ValueError:
             messagebox.showerror("Input Error", "Amount filters must be valid numbers.")
             return
-        
+
         try:
             expenses = get_filtered_expenses(user_id, start_date, end_date, category, min_amount, max_amount, description)
             update_expenses_table(expenses)
@@ -249,6 +268,8 @@ def create_view_expenses_subtab(sub_tab_frame, user_id):
     ttk.Button(date_buttons_frame, text="Last Month", command=set_last_month).grid(row=0, column=1, padx=5)
     ttk.Button(date_buttons_frame, text="This Year", command=set_this_year).grid(row=0, column=2, padx=5)
     ttk.Button(date_buttons_frame, text="Last Year", command=set_last_year).grid(row=0, column=3, padx=5)
+    ttk.Button(date_buttons_frame, text="All", command=lambda: view_expenses(all_expenses=True)).grid(row=0, column=4, padx=5)
+
 
     tk.Label(search_filter_frame, text="Category:").grid(row=3, column=0, padx=5, pady=5, sticky=tk.W)
     category_filter_combobox = ttk.Combobox(search_filter_frame, width=50, state="readonly")
@@ -333,29 +354,43 @@ def create_manage_category_subtab(sub_tab_frame, user_id):
         except Exception as e:
             messagebox.showerror("Database Error", f"Error adding category: {e}")
 
-    def delete_category():
+    def load_categories():
+        try:
+            categories = get_expenses_categories(user_id)
+            expense_stats = get_expense_stats_by_category(user_id)
+
+            for row in categories_tree.get_children():
+                categories_tree.delete(row)
+
+            for category in categories:
+                stats = expense_stats.get(category, {'count': 0, 'total': 0, 'min': 0, 'max': 0, 'avg': 0})
+                categories_tree.insert(
+                    "", "end",
+                    values=(category, stats['count'], stats['total'], stats['min'], stats['max'], stats['avg'])
+                )
+        except Exception as e:
+            messagebox.showerror("Database Error", f"Error loading categories: {e}")
+
+    def delete_category_with_expenses():
         selected_item = categories_tree.selection()
         if not selected_item:
             messagebox.showwarning("No Selection", "Please select a category to delete.")
             return
         
         category_name = categories_tree.item(selected_item, "values")[0]
-        try:
-            delete_expense_category_by_name(category_name, user_id)
-            messagebox.showinfo("Success", "Category deleted successfully!")
-            load_categories()
-        except Exception as e:
-            messagebox.showerror("Database Error", f"Error deleting category: {e}")
-
-    def load_categories():
-        try:
-            categories = get_expenses_categories(user_id)
-            for row in categories_tree.get_children():
-                categories_tree.delete(row)
-            for category in categories:
-                categories_tree.insert("", "end", values=(category,))
-        except Exception as e:
-            messagebox.showerror("Database Error", f"Error loading categories: {e}")
+        
+        confirm = messagebox.askyesno(
+            "Confirm Deletion",
+            f"Are you sure you want to delete the category '{category_name}' and all its linked expenses?"
+        )
+        if confirm:
+            try:
+                delete_category_and_expenses(category_name, user_id)
+                
+                messagebox.showinfo("Success", f"Category '{category_name}' and all linked expenses deleted successfully!")
+                load_categories()
+            except Exception as e:
+                messagebox.showerror("Database Error", f"Error deleting category and expenses: {e}")
 
     frame = ttk.Frame(sub_tab_frame)
     frame.pack(fill="both", expand=True, padx=20, pady=10)
@@ -373,11 +408,26 @@ def create_manage_category_subtab(sub_tab_frame, user_id):
     view_frame = ttk.LabelFrame(frame, text="Existing Categories", padding="10")
     view_frame.pack(fill="both", expand=True, padx=10, pady=10)
     
-    categories_tree = ttk.Treeview(view_frame, columns=("Category Name",), show="headings", height=10)
+    categories_tree = ttk.Treeview(
+        view_frame,
+        columns=("Category Name", "Expense Count", "Total Amount", "Lowest Amount", "Highest Amount", "Average Amount"),
+        show="headings",
+        height=10
+    )
     categories_tree.heading("Category Name", text="Category Name")
+    categories_tree.heading("Expense Count", text="Expense Count")
+    categories_tree.heading("Total Amount", text="Total Amount")
+    categories_tree.heading("Lowest Amount", text="Lowest Amount")
+    categories_tree.heading("Highest Amount", text="Highest Amount")
+    categories_tree.heading("Average Amount", text="Average Amount")
+    categories_tree.column("Expense Count", anchor="center", width=100)
+    categories_tree.column("Total Amount", anchor="center", width=120)
+    categories_tree.column("Lowest Amount", anchor="center", width=120)
+    categories_tree.column("Highest Amount", anchor="center", width=120)
+    categories_tree.column("Average Amount", anchor="center", width=120)
     categories_tree.pack(fill="both", expand=True, padx=5, pady=5)
     
-    delete_button = ttk.Button(view_frame, text="Delete Selected Category", command=delete_category)
-    delete_button.pack(pady=10)
+    delete_with_expenses_button = ttk.Button(view_frame, text="Delete Category with Expenses", command=delete_category_with_expenses)
+    delete_with_expenses_button.pack(pady=10)
     
     load_categories()
