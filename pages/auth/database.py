@@ -99,9 +99,23 @@ def create_tables():
                 category VARCHAR(50) NOT NULL,
                 recurrence ENUM('Daily', 'Weekly', 'Monthly', 'Yearly') NOT NULL,
                 start_date DATE NOT NULL,
+                end_date DATE NOT NULL,
                 next_due_date DATE NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 
+            )
+        """)
+
+        # create budgets table
+        cursor.execute("""
+                CREATE TABLE IF NOT EXISTS budgets (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                category VARCHAR(50),
+                amount DECIMAL(10,2) NOT NULL,
+                frequency ENUM('Monthly', 'Yearly') NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
         

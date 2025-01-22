@@ -1,6 +1,7 @@
 import mysql.connector
 import os
 from dotenv import load_dotenv
+from datetime import datetime, date
 
 load_dotenv()
 
@@ -166,6 +167,7 @@ def delete_expense_category_by_name(name, user_id):
     except Exception as e:
         raise Exception(f"Error deleting expense category: {e}")
 
+
 def get_expense_stats_by_category(user_id):
     try:
         connection = get_db_connection()
@@ -194,6 +196,9 @@ def get_expense_stats_by_category(user_id):
         } for item in stats}
     except Exception as e:
         raise Exception(f"Error fetching expense stats: {e}")
+
+
+
 
 # Delete all expenses linked to the category
 def delete_category_and_expenses(category_name, user_id):

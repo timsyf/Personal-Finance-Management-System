@@ -6,6 +6,7 @@ from dateutil.relativedelta import relativedelta
 from pages.expense_tracking.database import *
 from datetime import datetime
 
+
 def create_expense_tracking_tab(notebook, user_id):
     main_tab_frame = ttk.Frame(notebook)
 
@@ -195,6 +196,8 @@ def create_view_expenses_subtab(sub_tab_frame, user_id):
             expenses_tree.delete(selected_item)
             messagebox.showinfo("Success", "Expense deleted successfully.")
             view_expenses()
+
+
         except Exception as e:
             messagebox.showerror("Error", f"Error deleting expense: {e}")
 
@@ -224,6 +227,7 @@ def create_view_expenses_subtab(sub_tab_frame, user_id):
             update_expense_by_id(expense_id, description, amount, category, expense_date)
             messagebox.showinfo("Success", "Expense updated successfully!")
             view_expenses()
+
         except Exception as e:
             messagebox.showerror("Database Error", f"Error updating expense: {e}")
 
@@ -338,6 +342,7 @@ def create_view_expenses_subtab(sub_tab_frame, user_id):
 
     load_categories()
     view_expenses()
+
     
 def create_manage_category_subtab(sub_tab_frame, user_id):
     def add_category():

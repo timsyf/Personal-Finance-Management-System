@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from datetime import datetime
 
+
 from pages.income_tracking.income_tracking_tab import create_income_tracking_tab
 from pages.expense_tracking.expense_tracking_tab import create_expense_tracking_tab
 from pages.budget_tool.budget_tool_tab import create_budget_tool_tab
@@ -18,11 +19,12 @@ from pages.income_tracking.database import process_recurring_income
 import threading
 import time
 
+
 def main(user_id=None):
     if user_id is None:
         print("No user logged in")
         return
-        
+
     root = tk.Tk()
     root.title(f"Personal Finance Management System - User ID: {user_id}")
 
@@ -38,7 +40,7 @@ def main(user_id=None):
     def recurring_income_processor():
         """Process recurring incomes while the application is running"""
         print(f"[{datetime.now()}] Starting recurring income processor...")
-        
+
         while not stop_processor:
             try:
                 success, message = process_recurring_income()
@@ -48,13 +50,13 @@ def main(user_id=None):
                     print(f"[{datetime.now()}] Warning: {message}")
             except Exception as e:
                 print(f"[{datetime.now()}] Error in recurring income processor: {e}")
-            
+
             # Sleep for 1 hour before next check
             for _ in range(360):  # Check stop_processor every 10 seconds
                 if stop_processor:
                     break
                 time.sleep(10)
-    
+
     # Start the recurring income processor in a daemon thread
     processor_thread = threading.Thread(target=recurring_income_processor)
     processor_thread.daemon = True
@@ -77,9 +79,11 @@ def main(user_id=None):
     create_data_export_and_import_tab(notebook, user_id)
     create_ai_insights_tab(notebook, user_id)
 
+
     # Set up clean shutdown
     root.protocol("WM_DELETE_WINDOW", on_closing)
     root.mainloop()
+
 
 if __name__ == "__main__":
     auth_window = AuthWindow()

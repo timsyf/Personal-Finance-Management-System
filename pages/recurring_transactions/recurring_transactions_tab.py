@@ -1,8 +1,9 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from .database import insert_recurring_transaction, get_all_recurring_transactions, delete_recurring_transaction, get_expenses_categories
-
-
+from datetime import datetime
+from tkcalendar import DateEntry
+from datetime import date, timedelta
 
 def create_recurring_transactions_tab(notebook, user_id):
     #load category
@@ -38,18 +39,33 @@ def create_recurring_transactions_tab(notebook, user_id):
     )
     recurrence_combobox.grid(row=2, column=1, padx=5, pady=5)
 
-    ttk.Label(form_frame, text="Start Date (YYYY-MM-DD):").grid(row=3, column=0, padx=5, pady=5)
-    start_date_entry = ttk.Entry(form_frame, width=20)
-    start_date_entry.grid(row=3, column=1, padx=5, pady=5)
+    # Start Date Picker
+    ttk.Label(form_frame, text="Start Date (MM/DD/YYYY):").grid(row=3, column=0, padx=5, pady=5)
+    start_date_picker = DateEntry(
+        form_frame, width=20, background="darkblue", foreground="white",
+        state="readonly", date_pattern="mm/dd/yyyy"
+    )
+    start_date_picker.set_date(date.today())
+    start_date_picker.grid(row=3, column=1, padx=5, pady=5)
 
-    tk.Label(form_frame, text="Category:").grid(row=4, column=0, padx=5, pady=5, sticky=tk.W)
+    # End Date Picker
+    ttk.Label(form_frame, text="End Date (MM/DD/YYYY):").grid(row=4, column=0, padx=5, pady=5)
+    end_date_picker = DateEntry(
+        form_frame, width=20, background="darkblue", foreground="white",
+        state="readonly", date_pattern="mm/dd/yyyy"
+    )
+    end_date_picker.grid(row=4, column=1, padx=5, pady=5)
+
+    tk.Label(form_frame, text="Category:").grid(row=5, column=0, padx=5, pady=5, sticky=tk.W)
     category_combobox = ttk.Combobox(form_frame, width=28, state="readonly")
-    category_combobox.grid(row=4, column=1, padx=5, pady=5)
+    category_combobox.grid(row=5, column=1, padx=5, pady=5)
 
     #  display recurring transactions
-    columns = ("ID", "Name", "Amount", "Recurrence", "Start Date", "Category")
+    columns = ("ID", "Name", "Amount", "Recurrence", "Start Date", "End Date", "Category")
     transaction_table = ttk.Treeview(tab_frame, columns=columns, show="headings", height=10)
     transaction_table.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+
 
     for col in columns:
         transaction_table.heading(col, text=col)
@@ -68,6 +84,7 @@ def create_recurring_transactions_tab(notebook, user_id):
                     f"${transaction['amount']:.2f}",
                     transaction["recurrence"],
                     transaction["start_date"],
+                    transaction["end_date"],
                     transaction["category"],
                 ))
         except Exception as e:
@@ -81,7 +98,8 @@ def create_recurring_transactions_tab(notebook, user_id):
         name = expense_name_entry.get()
         amount = expense_amount_entry.get()
         recurrence = recurrence_combobox.get()
-        start_date = start_date_entry.get()
+        start_date = start_date_picker.get()
+        end_date = end_date_picker.get()
         category = category_combobox.get()
 
         # validate inputs
@@ -97,7 +115,7 @@ def create_recurring_transactions_tab(notebook, user_id):
 
         # insert to  database
         try:
-            insert_recurring_transaction(name, amount, recurrence, start_date, category)  # Insert into the database
+            insert_recurring_transaction(name, amount, recurrence, start_date, end_date, category, user_id)  # Insert into the database
         except Exception as e:
             messagebox.showerror("Error", f"Failed to add transaction to the database: {e}")
             return
@@ -106,15 +124,16 @@ def create_recurring_transactions_tab(notebook, user_id):
         transaction_table.delete(*transaction_table.get_children())
         load_transactions()
 
+
         # clear input fields
         expense_name_entry.delete(0, tk.END)
         expense_amount_entry.delete(0, tk.END)
         recurrence_combobox.set("")
-        start_date_entry.delete(0, tk.END)
+        start_date_picker.delete(0, tk.END)
 
         messagebox.showinfo("Success", "Recurring transaction added!")
 
-    # delet function
+    # delete function
     def delete_selected_transaction():
         selected_item = transaction_table.selection()  # Get selected row
         if not selected_item:
@@ -138,6 +157,7 @@ def create_recurring_transactions_tab(notebook, user_id):
 
             transaction_table.delete(*transaction_table.get_children())
             load_transactions()
+
 
             messagebox.showinfo("Success", "Transaction deleted successfully.")
 
