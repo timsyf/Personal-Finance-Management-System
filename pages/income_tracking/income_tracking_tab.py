@@ -178,6 +178,8 @@ class IncomeTrackingTab:
         btn_frame = ttk.Frame(source_form_frame)
         btn_frame.pack(pady=20, fill="x")
         
+        ttk.Button(btn_frame, text="Refresh", 
+                  command=lambda: [self.load_sources(), self.update_source_combo()]).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Add Source", 
                   command=self.add_source).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Update Source", 
@@ -186,8 +188,6 @@ class IncomeTrackingTab:
                   command=self.delete_source).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Clear", 
                   command=self.clear_source_form).pack(side="left", padx=5)
-        ttk.Button(btn_frame, text="Refresh", 
-                  command=lambda: [self.load_sources(), self.update_source_combo()]).pack(side="left", padx=5)
         
     def setup_income_tree(self):
         # Add scrollbar
