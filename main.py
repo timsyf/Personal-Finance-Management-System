@@ -6,7 +6,6 @@ from datetime import datetime
 from pages.income_tracking.income_tracking_tab import create_income_tracking_tab
 from pages.expense_tracking.expense_tracking_tab import create_expense_tracking_tab
 from pages.budget_tool.budget_tool_tab import create_budget_tool_tab
-from pages.expense_categories.expense_categories_tab import create_expense_categories_tab
 from pages.financial_data_visualization.financial_data_visualization_tab import create_financial_data_visualization_tab
 from pages.recurring_transactions.recurring_transactions_tab import create_recurring_transactions_tab
 from pages.alerts_and_reminder.alerts_and_reminder_tab import create_alerts_and_reminder_tab
@@ -73,7 +72,6 @@ def main(user_id=None):
     create_income_tracking_tab(notebook, user_id)
     create_expense_tracking_tab(notebook, user_id)
     create_budget_tool_tab(notebook, user_id)
-    create_expense_categories_tab(notebook, user_id)
     create_financial_data_visualization_tab(notebook, user_id)
     create_recurring_transactions_tab(notebook, user_id)
     create_alerts_and_reminder_tab(notebook, user_id)
