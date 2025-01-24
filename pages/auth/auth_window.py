@@ -100,7 +100,7 @@ class AuthWindow:
                 admin_panel = AdminPanel(self.current_user_id)
                 admin_panel.window.protocol("WM_DELETE_WINDOW", lambda: self.on_admin_panel_close(admin_panel))
             else:
-                # For regular users, proceed to main application
+                # For regular users, transition immediately
                 self.window.destroy()
                 self.start_main_application()
         else:

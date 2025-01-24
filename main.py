@@ -1,7 +1,9 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from datetime import datetime
-
+import sys
+import time
+import threading
 
 from pages.income_tracking.income_tracking_tab import create_income_tracking_tab
 from pages.expense_tracking.expense_tracking_tab import create_expense_tracking_tab
@@ -16,8 +18,6 @@ from pages.ai_insights.ai_insights_tab import create_ai_insights_tab
 from pages.auth.auth_window import AuthWindow
 from pages.income_tracking.database import process_recurring_income
 from pages.currency_exchange.currency_exchange_tab import create_currency_exchange_tab
-import threading
-import time
 
 
 def main(user_id=None):
@@ -33,10 +33,12 @@ def main(user_id=None):
 
     def on_closing():
         """Handle application closing"""
-        nonlocal stop_processor
-        stop_processor = True
-        root.destroy()
-
+        if messagebox.askyesno("Quit", "Are you sure you want to quit?"):
+            nonlocal stop_processor
+            stop_processor = True  # Signal thread to stop
+            root.destroy()  # Destroy immediately - the daemon thread will be terminated
+            sys.exit(0)  # Force exit the application
+            
     def recurring_income_processor():
         """Process recurring incomes while the application is running"""
         print(f"[{datetime.now()}] Starting recurring income processor...")
@@ -51,15 +53,15 @@ def main(user_id=None):
             except Exception as e:
                 print(f"[{datetime.now()}] Error in recurring income processor: {e}")
 
-            # Sleep for 1 hour before next check
-            for _ in range(360):  # Check stop_processor every 10 seconds
-                if stop_processor:
-                    break
-                time.sleep(10)
+            # Sleep for 5 seconds between checks
+            try:
+                time.sleep(5) 
+            except (KeyboardInterrupt, SystemExit):
+                print(f"[{datetime.now()}] Stopping recurring income processor...")
+                break
 
     # Start the recurring income processor in a daemon thread
-    processor_thread = threading.Thread(target=recurring_income_processor)
-    processor_thread.daemon = True
+    processor_thread = threading.Thread(target=recurring_income_processor, daemon=True)
     processor_thread.start()
     print(f"[{datetime.now()}] Recurring income processor thread started")
 
@@ -79,10 +81,16 @@ def main(user_id=None):
     create_ai_insights_tab(notebook, user_id)
     create_currency_exchange_tab(notebook)
 
-
     # Set up clean shutdown
     root.protocol("WM_DELETE_WINDOW", on_closing)
-    root.mainloop()
+    
+    try:
+        root.mainloop()
+    except KeyboardInterrupt:
+        print("\nReceived keyboard interrupt, shutting down...")
+        stop_processor = True
+        root.destroy()
+        sys.exit(0)
 
 
 if __name__ == "__main__":

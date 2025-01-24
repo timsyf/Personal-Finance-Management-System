@@ -213,23 +213,4 @@ def change_password(user_id, current_password, new_password):
         cursor.close()
         connection.close()
 
-def get_all_transactions(user_id):
-    """Get all transactions for a user"""
-    try:
-        connection = get_db_connection()
-        cursor = connection.cursor()
-        
-        query = """
-            SELECT id, description, amount, date
-            FROM transactions
-            WHERE user_id = %s
-            ORDER BY date DESC
-        """
-        cursor.execute(query, (user_id,))
-        return cursor.fetchall()
-    except mysql.connector.Error as err:
-        print(f"Error: {err}")
-        return []
-    finally:
-        cursor.close()
-        connection.close()
+

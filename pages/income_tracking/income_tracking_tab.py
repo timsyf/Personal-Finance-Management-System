@@ -459,14 +459,32 @@ class IncomeTrackingTab:
     def on_recurring_select(self, event):
         selection = self.recurring_tree.selection()
         if selection:
-            values = self.recurring_tree.item(selection[0])["values"]
-            self.recurring_description.delete(0, "end")
-            self.recurring_description.insert(0, values[1])
-            self.recurring_amount.delete(0, "end")
-            self.recurring_amount.insert(0, values[2])
-            self.recurring_source.set(values[5])
-            self.recurring_frequency.set(values[3])
-            self.recurring_start_date.set_date(datetime.strptime(values[4], "%Y-%m-%d").date())
+            # Get the record from the database to ensure we have all fields
+            records = get_recurring_income(self.user_id)
+            selected_id = self.recurring_tree.item(selection[0])["values"][0]
+            
+            # Find the matching record
+            selected_record = None
+            for record in records:
+                if record["id"] == selected_id:
+                    selected_record = record
+                    break
+            
+            if selected_record:
+                # Fill in all fields
+                self.recurring_description.delete(0, "end")
+                self.recurring_description.insert(0, selected_record["description"])
+                self.recurring_amount.delete(0, "end")
+                self.recurring_amount.insert(0, str(selected_record["amount"]))
+                self.recurring_source.set(selected_record["source_name"])
+                self.recurring_frequency.set(selected_record["frequency"])
+                self.recurring_start_date.set_date(selected_record["start_date"])
+                
+                # Set end date if it exists
+                if selected_record["end_date"]:
+                    self.recurring_end_date.set_date(selected_record["end_date"])
+                else:
+                    self.recurring_end_date.set_date(datetime.now().date())
         
     def load_recurring_income(self):
         # Clear existing items

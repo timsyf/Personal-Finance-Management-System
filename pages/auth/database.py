@@ -18,7 +18,7 @@ def create_tables():
         connection = get_db_connection()
         cursor = connection.cursor()
         
-        # Create users table with is_admin flag
+        # Create users table 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -282,17 +282,65 @@ def delete_user(user_id, admin_id):
         if user and user[0]:
             return False, "Cannot delete admin users"
             
-        # Delete user's data first 
-        cursor.execute("DELETE FROM transactions WHERE user_id = %s", (user_id,))
-        cursor.execute("DELETE FROM budgets WHERE user_id = %s", (user_id,))
-        cursor.execute("DELETE FROM expense_categories WHERE user_id = %s", (user_id,))
+        # Delete user's data from all tables in correct order (foreign key constraints)
+        cursor.execute("DELETE FROM recurring_income WHERE user_id = %s", (user_id,))
+        cursor.execute("DELETE FROM income_tracker WHERE user_id = %s", (user_id,))
+        cursor.execute("DELETE FROM income_sources WHERE user_id = %s", (user_id,))
         cursor.execute("DELETE FROM recurring_transactions WHERE user_id = %s", (user_id,))
+        cursor.execute("DELETE FROM expenses_tracker WHERE user_id = %s", (user_id,))
+        cursor.execute("DELETE FROM expenses_category WHERE user_id = %s", (user_id,))
+        cursor.execute("DELETE FROM budgets WHERE user_id = %s", (user_id,))
         
-        # Delete the user
+        # Finally delete the user
         cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
         connection.commit()
-        return True, "User deleted successfully"
+        return True, "User and all associated data deleted successfully"
     except mysql.connector.Error as err:
+        return False, f"Error: {err}"
+    finally:
+        cursor.close()
+        connection.close()
+
+def update_user(user_id, username=None, email=None, is_admin=None, admin_id=None):
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Verify the admin
+        cursor.execute("SELECT is_admin FROM users WHERE id = %s", (admin_id,))
+        admin = cursor.fetchone()
+        if not admin or not admin[0]:
+            return False, "Not authorized"
+            
+        # Build update query dynamically based on provided fields
+        update_parts = []
+        params = []
+        
+        if username is not None:
+            update_parts.append("username = %s")
+            params.append(username)
+            
+        if email is not None:
+            update_parts.append("email = %s")
+            params.append(email)
+            
+        if is_admin is not None:
+            update_parts.append("is_admin = %s")
+            params.append(is_admin)
+            
+        if not update_parts:
+            return False, "No fields to update"
+            
+        query = f"UPDATE users SET {', '.join(update_parts)} WHERE id = %s"
+        params.append(user_id)
+        
+        cursor.execute(query, tuple(params))
+        connection.commit()
+        
+        return True, "User updated successfully"
+    except mysql.connector.Error as err:
+        if err.errno == 1062:  # Duplicate entry error
+            return False, "Username or email already exists"
         return False, f"Error: {err}"
     finally:
         cursor.close()

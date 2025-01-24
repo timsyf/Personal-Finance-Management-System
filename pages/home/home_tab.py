@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
-from pages.home.database import get_all_transactions, change_password
+from pages.home.database import change_password
 from pages.auth.auth_window import AuthWindow
 from .database import (
     get_monthly_summary,
@@ -302,9 +302,5 @@ def create_home_tab(notebook, user_id):
     notebook.add(home_tab.frame, text="Home")
     return home_tab
 
-def view_transactions(listbox, user_id):
-    rows = get_all_transactions(user_id)
-    listbox.delete(0, tk.END)
-    for row in rows:
-        listbox.insert(tk.END, f"{row[0]} | {row[1]} | ${row[2]} | {row[3]}")
+
 
