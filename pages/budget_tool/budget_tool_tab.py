@@ -224,6 +224,8 @@ def create_budget_tool_tab(notebook, user_id):
     progress_notebook.add(monthly_progress_frame, text="Monthly Progress")
     progress_notebook.add(yearly_progress_frame, text="Yearly Progress")
     ttk.Button(add_budget_frame, text="Reload Progress", command=load_progress).grid(row=4, column=0, pady=10,
+                                                                                 sticky=tk.W)
+    ttk.Button(add_budget_frame, text="Reload Categories", command=load_categories).grid(row=5, column=0, pady=10,
                                                                                      sticky=tk.W)
     load_progress()  # Load progress initially
     notebook.add(tab_frame, text="Budget Tool")

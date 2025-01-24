@@ -2,6 +2,7 @@ import mysql.connector
 import os
 from dotenv import load_dotenv
 from datetime import datetime, date
+from pages.alerts_and_reminder.database import check_budget_exceeded
 
 load_dotenv()
 
@@ -16,17 +17,21 @@ def get_db_connection():
 # Function to add daily expense
 def add_expenses_tracker(description, amount, category, date, user_id):
     try:
-        connection = get_db_connection()
-        cursor = connection.cursor()
-        query = """
-            INSERT INTO expenses_tracker (description, amount, category, date, user_id)
-            VALUES (%s, %s, %s, %s, %s)
-        """
-        cursor.execute(query, (description, amount, category, date, user_id))
-        connection.commit()
-        cursor.close()
+        with get_db_connection() as connection:
+            with connection.cursor() as cursor:
+                query = """
+                    INSERT INTO expenses_tracker (description, amount, category, date, user_id)
+                    VALUES (%s, %s, %s, %s, %s)
+                """
+                cursor.execute(query, (description, amount, category, date, user_id))
+                connection.commit()
+
+        # Use a new connection for checking budget exceedance
+        check_budget_exceeded(user_id)
+
     except Exception as e:
         raise Exception(f"Error saving expense: {e}")
+
 
 # Function to fetch all daily expenses for a user
 def get_expenses_tracker(user_id):
@@ -149,8 +154,13 @@ def update_expense_by_id(expense_id, description, amount, category, date):
         cursor.execute(query, (description, amount, category, date, expense_id))
         connection.commit()
         cursor.close()
+
+        check_budget_exceeded(user_id)
     except Exception as e:
         raise Exception(f"Error updating expense: {e}")
+    finally:
+        if connection:
+            connection.close()
 
 # Function to delete an expense category by name
 def delete_expense_category_by_name(name, user_id):

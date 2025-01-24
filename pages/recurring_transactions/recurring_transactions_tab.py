@@ -170,6 +170,7 @@ def create_recurring_transactions_tab(notebook, user_id):
     ttk.Button(button_frame, text="Add Transaction", command=add_transaction).pack(side=tk.LEFT, padx=5)
 
     ttk.Button(button_frame, text="Delete Selected Transaction", command=delete_selected_transaction).pack(side=tk.LEFT, padx=5)
+    ttk.Button(button_frame, text="Reload Category", command=load_categories).pack(side=tk.LEFT, padx=5)
 
     # Add the tab to the notebook
     notebook.add(tab_frame, text="Recurring Expenses")

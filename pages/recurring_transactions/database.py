@@ -2,6 +2,7 @@ import mysql.connector
 import os
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+from pages.alerts_and_reminder.database import check_budget_exceeded
 
 load_dotenv()
 
@@ -40,18 +41,23 @@ def insert_recurring_transaction(name, amount, recurrence, start_date, end_date,
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
+        str_start_date = datetime.strptime(start_date, "%m/%d/%Y")
+
+        str_end_date = datetime.strptime(end_date, "%m/%d/%Y")
+        formatted_start_date = str_start_date.strftime("%Y-%m-%d")
+        formatted_end_date = str_end_date.strftime("%Y-%m-%d")
 
         # Insert recurring transaction
         query = """
         INSERT INTO recurring_transactions (name, amount, recurrence, start_date, end_date, category, user_id)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (name, amount, recurrence, start_date, end_date, category, user_id))
+        cursor.execute(query, (name, amount, recurrence, formatted_start_date, formatted_end_date, category, user_id))
         connection.commit()
 
         # Call function to populate expenses_tracker
         insert_recurring_to_tracker(user_id, name, amount, category, start_date, end_date, recurrence)
-
+        check_budget_exceeded(user_id)
         print("Recurring transaction and expenses tracker records added successfully!")
     except mysql.connector.Error as err:
         print(f"Error: {err}")

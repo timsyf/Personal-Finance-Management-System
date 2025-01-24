@@ -106,6 +106,20 @@ def create_tables():
             )
         """)
 
+        # create alert table
+        cursor.execute("""
+                CREATE TABLE IF NOT EXISTS alerts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                budget_id INT,
+                category VARCHAR(50),
+                alert_message VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (budget_id) REFERENCES budgets(id)
+                )
+         """)
+
         # create budgets table
         cursor.execute("""
                 CREATE TABLE IF NOT EXISTS budgets (
