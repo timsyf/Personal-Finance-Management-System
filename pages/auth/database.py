@@ -106,6 +106,19 @@ def create_tables():
             )
         """)
 
+        # create budgets table
+        cursor.execute("""
+                CREATE TABLE IF NOT EXISTS budgets (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                category VARCHAR(50),
+                amount DECIMAL(10,2) NOT NULL,
+                frequency ENUM('Monthly', 'Yearly') NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+
         # create alert table
         cursor.execute("""
                 CREATE TABLE IF NOT EXISTS alerts (
@@ -119,19 +132,6 @@ def create_tables():
                 FOREIGN KEY (budget_id) REFERENCES budgets(id)
                 )
          """)
-
-        # create budgets table
-        cursor.execute("""
-                CREATE TABLE IF NOT EXISTS budgets (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                category VARCHAR(50),
-                amount DECIMAL(10,2) NOT NULL,
-                frequency ENUM('Monthly', 'Yearly') NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id)
-            )
-        """)
         
         # Create daily expenses table with user_id
         cursor.execute("""

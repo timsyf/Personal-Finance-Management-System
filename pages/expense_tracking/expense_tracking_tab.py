@@ -224,7 +224,7 @@ def create_view_expenses_subtab(sub_tab_frame, user_id):
             return
 
         try:
-            update_expense_by_id(expense_id, description, amount, category, expense_date)
+            update_expense_by_id(expense_id, description, amount, category, expense_date, user_id)
             messagebox.showinfo("Success", "Expense updated successfully!")
             view_expenses()
 

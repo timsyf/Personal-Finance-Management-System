@@ -142,7 +142,7 @@ def delete_expense_by_id(expense_id):
         raise Exception(f"Error deleting expense: {e}")
 
 # Function to update an expense by ID
-def update_expense_by_id(expense_id, description, amount, category, date):
+def update_expense_by_id(expense_id, description, amount, category, date, user_id):
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
