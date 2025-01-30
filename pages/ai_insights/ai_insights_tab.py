@@ -14,6 +14,7 @@ from pages.ai_insights.database import (
     get_recurring_transactions,
     get_expenses_category,
 )
+from pages.ai_insights.database import get_fixed_queries, add_fixed_query, delete_fixed_query
 
 tts_thread = None
 stop_reading_flag = False
@@ -43,13 +44,34 @@ def create_ai_insights_tab(notebook, user_id):
     fixed_queries_frame = ttk.LabelFrame(main_frame, text="Fixed Queries", padding=10)
     fixed_queries_frame.pack(side="left", fill="both", expand=True, padx=(0, 10))
 
-    queries = [
-        "Provide a summary of all transactions.",
-        "What are my top 5 expenses?",
-        "How much income do I have?",
-        "Show me the total income for this month.",
-        "Give me some financial advice.",
-    ]
+    queries = []
+
+    def load_fixed_queries():
+        fixed_queries_tree.delete(*fixed_queries_tree.get_children())
+        queries = get_fixed_queries(user_id)
+        for query in queries:
+            fixed_queries_tree.insert("", "end", values=(query[1], query[0]))
+
+    def add_query():
+        """Add a new query to the user's saved queries."""
+        new_query = user_input.get("1.0", tk.END).strip()
+        if new_query:
+            add_fixed_query(user_id, new_query)
+            load_fixed_queries()
+
+    add_button = ttk.Button(fixed_queries_frame, text="Add Query", command=add_query)
+    add_button.pack(pady=5)
+
+    def remove_query():
+        """Remove the selected fixed query from the database."""
+        selected_item = fixed_queries_tree.selection()
+        if selected_item:
+            query_id = fixed_queries_tree.item(selected_item, "values")[1]  # Get the query ID
+            delete_fixed_query(query_id, user_id)
+            load_fixed_queries()
+
+    remove_button = ttk.Button(fixed_queries_frame, text="Remove Query", command=remove_query)
+    remove_button.pack(pady=5)
 
     def populate_query(event):
         """Populate the user_input Text widget with the selected query."""
@@ -123,6 +145,8 @@ def create_ai_insights_tab(notebook, user_id):
 
     loading_label = ttk.Label(tab_frame, text="", foreground="blue")
     loading_label.pack(pady=5)
+
+    load_fixed_queries()
 
     def fetch_database_data():
         """Fetch all relevant data from the database."""

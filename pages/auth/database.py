@@ -155,6 +155,17 @@ def create_tables():
             )
         """)
         
+        # Create expenses_category table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS fixed_queries (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                query_text TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+        """)
+        
         connection.commit()
         print("Tables verified successfully")
         return True
