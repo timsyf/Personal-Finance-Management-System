@@ -5,6 +5,7 @@ import requests
 import pyttsx3
 import os
 import threading
+import speech_recognition as sr
 from dotenv import load_dotenv
 from pages.ai_insights.database import (
     get_income_tracker,
@@ -18,6 +19,11 @@ from pages.ai_insights.database import get_fixed_queries, add_fixed_query, delet
 
 tts_thread = None
 stop_reading_flag = False
+voice_input_button = None
+response_text = None
+user_input = None
+is_listening = False
+root = None
 
 load_dotenv()
 
@@ -25,6 +31,39 @@ API_KEY = os.getenv("OPENAI_API_KEY")
 API_URL = "https://api.openai.com/v1/chat/completions"
 
 tts_engine = pyttsx3.init()
+
+def voice_input(voice_button, query_text):
+    """Capture voice input and transcribe it into the query input field."""
+    global is_listening
+
+    recognizer = sr.Recognizer()
+
+    with sr.Microphone() as source:
+        if not is_listening:
+            is_listening = True
+            voice_button.config(text="Stop Listening")
+
+            query_text.insert("1.0", "Listening... Speak now.\n")
+            query_text.update_idletasks()
+
+            try:
+                audio = recognizer.listen(source, timeout=5)
+                query_text.delete("1.0", tk.END)
+                text = recognizer.recognize_google(audio)
+                query_text.delete("1.0", tk.END)
+                query_text.insert("1.0", text)
+            except sr.UnknownValueError:
+                query_text.insert("1.0", "🎤 Listening... Speak now.\n")
+            except sr.RequestError:
+                query_text.insert("1.0", "Error with speech recognition service.\n")
+            except Exception as e:
+                query_text.insert("1.0", f"Error: {str(e)}\n")
+
+            is_listening = False
+            voice_button.config(text="Voice Input")
+        else:
+            is_listening = False
+            voice_button.config(text="Voice Input")
 
 def create_ai_insights_tab(notebook, user_id):
     tab_frame = ttk.Frame(notebook)
@@ -36,10 +75,19 @@ def create_ai_insights_tab(notebook, user_id):
     query_frame = ttk.LabelFrame(main_frame, text="Query Input", padding=10)
     query_frame.pack(side="left", fill="both", expand=True, padx=(0, 10))
 
+    voice_input_button = ttk.Button(query_frame, text="Voice Input", command=voice_input)
+    voice_input_button.grid(row=2, column=0, pady=5)
+
     query_label = ttk.Label(query_frame, text="Enter your query:")
     query_label.grid(row=0, column=0, sticky="w", pady=5)
     user_input = tk.Text(query_frame, height=8, width=40)
     user_input.grid(row=1, column=0, pady=5)
+
+    voice_input_button = ttk.Button(
+        query_frame, text="Voice Input",
+        command=lambda btn=voice_input_button, txt=user_input: voice_input(btn, txt)
+    )
+    voice_input_button.grid(row=2, column=0, pady=5)
 
     fixed_queries_frame = ttk.LabelFrame(main_frame, text="Fixed Queries", padding=10)
     fixed_queries_frame.pack(side="left", fill="both", expand=True, padx=(0, 10))
