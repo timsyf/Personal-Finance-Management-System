@@ -17,6 +17,18 @@ class IncomeTrackingTab:
         self.selected_income_id = None
         self.selected_source_id = None
         self.sources = {}  # Dictionary to store source_id -> source_name mapping
+        # Add ID mappings
+        self.income_id_map = {}  # Maps row numbers to income IDs
+        self.recurring_id_map = {}  # Maps row numbers to recurring income IDs
+        self.source_id_map = {}  # Maps row numbers to source IDs
+        
+        # Add sort state tracking
+        self.income_sort_column = None
+        self.income_sort_reverse = False
+        self.recurring_sort_column = None
+        self.recurring_sort_reverse = False
+        self.sources_sort_column = None
+        self.sources_sort_reverse = False
         
         self.setup_ui()
         
@@ -139,17 +151,17 @@ class IncomeTrackingTab:
         scrollbar.pack(side="right", fill="y")
         
         # Create Treeview for sources
-        columns = ("ID", "Name", "Description")
+        columns = ("No.", "Name", "Description")
         self.sources_tree = ttk.Treeview(sources_list_frame, columns=columns, show="headings", 
                                        yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.sources_tree.yview)
         
-        # Configure columns
-        self.sources_tree.heading("ID", text="ID")
-        self.sources_tree.heading("Name", text="Name")
-        self.sources_tree.heading("Description", text="Description")
+        # Configure columns with sorting
+        for col in columns:
+            self.sources_tree.heading(col, text="#" if col == "No." else col,
+                                    command=lambda c=col: self.sort_sources(c))
         
-        self.sources_tree.column("ID", width=50)
+        self.sources_tree.column("No.", width=50)
         self.sources_tree.column("Name", width=150)
         self.sources_tree.column("Description", width=200)
         
@@ -195,19 +207,17 @@ class IncomeTrackingTab:
         scrollbar.pack(side="right", fill="y")
         
         # Create Treeview
-        columns = ("ID", "Date", "Description", "Amount", "Source")
+        columns = ("No.", "Date", "Description", "Amount", "Source")
         self.tree = ttk.Treeview(self.list_frame, columns=columns, show="headings", 
                                 yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.tree.yview)
         
-        # Configure columns
-        self.tree.heading("ID", text="ID")
-        self.tree.heading("Date", text="Date")
-        self.tree.heading("Description", text="Description")
-        self.tree.heading("Amount", text="Amount")
-        self.tree.heading("Source", text="Source")
+        # Configure columns with sorting
+        for col in columns:
+            self.tree.heading(col, text="#" if col == "No." else col,
+                            command=lambda c=col: self.sort_income_records(c))
         
-        self.tree.column("ID", width=50)
+        self.tree.column("No.", width=50)
         self.tree.column("Date", width=100)
         self.tree.column("Description", width=200)
         self.tree.column("Amount", width=100)
@@ -283,23 +293,20 @@ class IncomeTrackingTab:
         form_frame.pack(side="right", fill="y", padx=10)
         
         # Recurring income list
-        columns = ("id", "description", "amount", "frequency", "next_date", "source")
+        columns = ("No.", "Description", "Amount", "Frequency", "Next Date", "Source")
         self.recurring_tree = ttk.Treeview(list_frame, columns=columns, show="headings")
         
-        # Configure columns
-        self.recurring_tree.heading("id", text="ID")
-        self.recurring_tree.heading("description", text="Description")
-        self.recurring_tree.heading("amount", text="Amount")
-        self.recurring_tree.heading("frequency", text="Frequency")
-        self.recurring_tree.heading("next_date", text="Next Date")
-        self.recurring_tree.heading("source", text="Source")
+        # Configure columns with sorting
+        for col in columns:
+            self.recurring_tree.heading(col, text="#" if col == "No." else col,
+                                     command=lambda c=col: self.sort_recurring_income(c))
         
-        self.recurring_tree.column("id", width=50)
-        self.recurring_tree.column("description", width=200)
-        self.recurring_tree.column("amount", width=100)
-        self.recurring_tree.column("frequency", width=100)
-        self.recurring_tree.column("next_date", width=100)
-        self.recurring_tree.column("source", width=150)
+        self.recurring_tree.column("No.", width=50)
+        self.recurring_tree.column("Description", width=200)
+        self.recurring_tree.column("Amount", width=100)
+        self.recurring_tree.column("Frequency", width=100)
+        self.recurring_tree.column("Next Date", width=100)
+        self.recurring_tree.column("Source", width=150)
         
         self.recurring_tree.pack(fill="both", expand=True)
         self.recurring_tree.bind("<<TreeviewSelect>>", self.on_recurring_select)
@@ -459,11 +466,12 @@ class IncomeTrackingTab:
     def on_recurring_select(self, event):
         selection = self.recurring_tree.selection()
         if selection:
-            # Get the record from the database to ensure we have all fields
-            records = get_recurring_income(self.user_id)
-            selected_id = self.recurring_tree.item(selection[0])["values"][0]
+            values = self.recurring_tree.item(selection[0])["values"]
+            row_number = values[0]
+            selected_id = self.recurring_id_map.get(row_number)
             
-            # Find the matching record
+            # Get the record from the database
+            records = get_recurring_income(self.user_id)
             selected_record = None
             for record in records:
                 if record["id"] == selected_id:
@@ -471,7 +479,6 @@ class IncomeTrackingTab:
                     break
             
             if selected_record:
-                # Fill in all fields
                 self.recurring_description.delete(0, "end")
                 self.recurring_description.insert(0, selected_record["description"])
                 self.recurring_amount.delete(0, "end")
@@ -480,7 +487,6 @@ class IncomeTrackingTab:
                 self.recurring_frequency.set(selected_record["frequency"])
                 self.recurring_start_date.set_date(selected_record["start_date"])
                 
-                # Set end date if it exists
                 if selected_record["end_date"]:
                     self.recurring_end_date.set_date(selected_record["end_date"])
                 else:
@@ -491,11 +497,15 @@ class IncomeTrackingTab:
         for item in self.recurring_tree.get_children():
             self.recurring_tree.delete(item)
         
+        # Clear ID mapping
+        self.recurring_id_map = {}
+        
         # Load recurring income records
         records = get_recurring_income(self.user_id)
-        for record in records:
+        for index, record in enumerate(records, 1):
+            self.recurring_id_map[index] = record["id"]  # Store mapping
             self.recurring_tree.insert("", "end", values=(
-                record["id"],
+                index,
                 record["description"],
                 record["amount"],
                 record["frequency"],
@@ -545,10 +555,14 @@ class IncomeTrackingTab:
         for item in self.sources_tree.get_children():
             self.sources_tree.delete(item)
         
+        # Clear ID mapping
+        self.source_id_map = {}
+        
         sources = get_income_sources(self.user_id)
-        for source in sources:
+        for index, source in enumerate(sources, 1):
+            self.source_id_map[index] = source["id"]  # Store mapping
             self.sources_tree.insert("", "end", values=(
-                source["id"],
+                index,
                 source["name"],
                 source["description"]
             ))
@@ -562,7 +576,10 @@ class IncomeTrackingTab:
         item = self.sources_tree.item(selected_items[0])
         values = item["values"]
         
-        self.selected_source_id = values[0]
+        # Get the actual database ID from the mapping
+        row_number = values[0]
+        self.selected_source_id = self.source_id_map.get(row_number)
+        
         self.source_name_var.set(values[1])
         self.source_desc_var.set(values[2])
     
@@ -636,11 +653,15 @@ class IncomeTrackingTab:
         for item in self.tree.get_children():
             self.tree.delete(item)
         
+        # Clear ID mapping
+        self.income_id_map = {}
+        
         # Load income records
         records = get_income(self.user_id)
-        for record in records:
+        for index, record in enumerate(records, 1):
+            self.income_id_map[index] = record["id"]  # Store mapping
             self.tree.insert("", "end", values=(
-                record["id"],
+                index,
                 record["date"].strftime("%Y-%m-%d"),
                 record["description"],
                 f"${record['amount']:.2f}",
@@ -662,17 +683,18 @@ class IncomeTrackingTab:
         if not values:
             return
             
-        # Update form with selected values
-        self.selected_income_id = values[0]
+        # Get the actual database ID from the mapping
+        row_number = values[0]
+        self.selected_income_id = self.income_id_map.get(row_number)
+        
         self.amount_var.set(values[3].replace('$', ''))
         self.description_var.set(values[2])
-        # Convert string date to datetime object
         try:
             date_obj = datetime.strptime(values[1], "%Y-%m-%d").date()
             self.date_entry.set_date(date_obj)
         except ValueError:
             print(f"Invalid date format: {values[1]}")
-        self.source_var.set(values[4])  # source name
+        self.source_var.set(values[4])
         
     def add_income_record(self):
         """Add a new income record"""
@@ -787,50 +809,54 @@ class IncomeTrackingTab:
         self.apply_filters()
     
     def apply_filters(self):
-        """Apply all filters to the income records"""
-        # Get filter values
-        start_date = self.date_from.get_date()
-        end_date = self.date_to.get_date()
-        selected_source = self.filter_source_var.get()
-        search_text = self.search_var.get().lower()
-        
-        # Get income records
-        records = get_income(self.user_id, start_date, end_date)
-        
+        """Apply date range and source filters"""
         # Clear existing items
         for item in self.tree.get_children():
             self.tree.delete(item)
-            
-        total_income = 0
+        
+        # Clear ID mapping
+        self.income_id_map = {}
+        
+        # Get filter values
+        date_from = self.date_from.get_date()
+        date_to = self.date_to.get_date()
+        selected_source = self.filter_source_var.get()
+        search_text = self.search_var.get().lower()
+        
+        # Get all records and filter
+        records = get_income(self.user_id)
+        filtered_records = []
+        
         for record in records:
-            # Debug print for source comparison
-            print(f"Comparing - Selected: '{selected_source}' with Record: '{record['source_name']}'")
-            
-            # Apply source filter
-            if selected_source != 'All Sources':
-                if record['source_name'].strip() != selected_source.strip():
-                    print(f"Source mismatch - skipping record")
-                    continue
-                
-            # Apply search filter
-            if search_text and search_text not in record['description'].lower():
+            # Date filter
+            record_date = record["date"]
+            if not (date_from <= record_date <= date_to):
                 continue
                 
-            # Add matching record to tree
-            self.tree.insert('', 'end', values=(
-                record['id'],
-                record['date'],
-                record['description'],
-                f"${record['amount']:.2f}",
-                record['source_name']
-            ))
-            total_income += float(record['amount'])
-            
-        # Update total income display
-        self.total_income_var.set(f"Total Income: ${total_income:.2f}")
+            # Source filter
+            if selected_source != "All Sources" and record["source_name"] != selected_source:
+                continue
+                
+            # Search filter
+            if search_text and search_text not in record["description"].lower():
+                continue
+                
+            filtered_records.append(record)
         
-        # Debug print total records
-        print(f"Total records displayed: {len(self.tree.get_children())}")
+        # Insert filtered records with sequential numbering
+        for index, record in enumerate(filtered_records, 1):
+            self.income_id_map[index] = record["id"]  # Store mapping
+            self.tree.insert("", "end", values=(
+                index,  # Use sequential number instead of ID
+                record["date"].strftime("%Y-%m-%d"),
+                record["description"],
+                f"${record['amount']:.2f}",
+                record["source_name"]
+            ))
+        
+        # Update total for filtered records
+        filtered_total = sum(record["amount"] for record in filtered_records)
+        self.total_income_var.set(f"Total Income: ${filtered_total:.2f}")
     
     def clear_filters(self):
         """Clear all filters"""
@@ -841,6 +867,89 @@ class IncomeTrackingTab:
         self.filter_source_var.set("All Sources")
         self.search_var.set("")
         self.load_income_data()  # Reset to show all records
+
+    def sort_income_records(self, column):
+        """Sort income records by the selected column"""
+        items = [(self.tree.set(item, column), item) for item in self.tree.get_children('')]
+        
+        # Determine sort order
+        reverse = False
+        if self.income_sort_column == column and not self.income_sort_reverse:
+            reverse = True
+        
+        # Update sort state
+        self.income_sort_column = column
+        self.income_sort_reverse = reverse
+        
+        # Sort based on column type
+        if column == "Amount":
+            items.sort(key=lambda x: float(x[0].replace('$', '').replace(',', '')), reverse=reverse)
+        elif column == "Date":
+            items.sort(key=lambda x: datetime.strptime(x[0], "%Y-%m-%d"), reverse=reverse)
+        elif column == "No.":
+            items.sort(key=lambda x: int(x[0]), reverse=reverse)
+        else:
+            items.sort(key=lambda x: x[0].lower(), reverse=reverse)
+        
+        # Rearrange items
+        for index, (_, item) in enumerate(items):
+            self.tree.move(item, '', index)
+            # Update the No. column to maintain sequential ordering
+            self.tree.set(item, "No.", str(index + 1))
+    
+    def sort_recurring_income(self, column):
+        """Sort recurring income by the selected column"""
+        items = [(self.recurring_tree.set(item, column), item) for item in self.recurring_tree.get_children('')]
+        
+        # Determine sort order
+        reverse = False
+        if self.recurring_sort_column == column and not self.recurring_sort_reverse:
+            reverse = True
+        
+        # Update sort state
+        self.recurring_sort_column = column
+        self.recurring_sort_reverse = reverse
+        
+        # Sort based on column type
+        if column == "Amount":
+            items.sort(key=lambda x: float(x[0].replace('$', '').replace(',', '')), reverse=reverse)
+        elif column == "Next Date":
+            items.sort(key=lambda x: datetime.strptime(x[0], "%Y-%m-%d"), reverse=reverse)
+        elif column == "No.":
+            items.sort(key=lambda x: int(x[0]), reverse=reverse)
+        else:
+            items.sort(key=lambda x: x[0].lower(), reverse=reverse)
+        
+        # Rearrange items
+        for index, (_, item) in enumerate(items):
+            self.recurring_tree.move(item, '', index)
+            # Update the No. column to maintain sequential ordering
+            self.recurring_tree.set(item, "No.", str(index + 1))
+    
+    def sort_sources(self, column):
+        """Sort sources by the selected column"""
+        items = [(self.sources_tree.set(item, column), item) for item in self.sources_tree.get_children('')]
+        
+        # Determine sort order
+        reverse = False
+        if self.sources_sort_column == column and not self.sources_sort_reverse:
+            reverse = True
+        
+        # Update sort state
+        self.sources_sort_column = column
+        self.sources_sort_reverse = reverse
+        
+        # Sort based on column type
+        if column == "No.":
+            items.sort(key=lambda x: int(x[0]), reverse=reverse)
+        else:
+            items.sort(key=lambda x: x[0].lower(), reverse=reverse)
+        
+        # Rearrange items
+        for index, (_, item) in enumerate(items):
+            self.sources_tree.move(item, '', index)
+            # Update the No. column to maintain sequential ordering
+            self.sources_tree.set(item, "No.", str(index + 1))
 
 def create_income_tracking_tab(notebook, user_id):
     """Create and return the income tracking tab"""
